@@ -5,36 +5,33 @@
 #ifndef DES_DES_H
 #define DES_DES_H
 
-#include <cstdint>
+
 using namespace std;
 
-#define uint64 uint64_t
-#define uint32 uint32_t
-#define uint8  uint8_t
-
-class DES
-{
+class DES {
 public:
-    DES(uint64 key);
-    uint64 des(uint64 block, bool mode);
+    DES(string key);
 
-    uint64 encrypt(uint64 block);
-    uint64 decrypt(uint64 block);
+    string des(string message, bool encrypt);
 
-    static uint64 encrypt(uint64 block, uint64 key);
-    static uint64 decrypt(uint64 block, uint64 key);
+    string encrypt(string block);
+
+    string decrypt(string block);
 
 protected:
-    void keygen(uint64 key);
+    static string rol_keys(string key, int i);
+    static string getKey56(string key);
+    static string getKeys48(string C, string D);
+    string process_string(string substring, int p);
+    string expanded_msg(string R);
+    string xored_msg(string ep_msg, string fe_key);
+    string substitution_function(string xored_message);
 
-    uint64 ip(uint64 block);
-    uint64 fp(uint64 block);
-
-    void feistel(uint32 &L, uint32 &R, uint32 F);
-    uint32 f(uint32 R, uint64 k);
-
+    void keygen(string fs_key);
+    static string ip(string block);
+    static string fp(string block);
 private:
-    uint64 sub_key[16];
+    string sub_key[16];
 };
 
 #endif //DES_DES_H

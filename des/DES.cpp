@@ -2,145 +2,248 @@
 // Created by whyko on 04.10.2019.
 //
 
+#include <iostream>
+#include <string>
+#include <vector>
 #include "DES.h"
 #include "constants.h"
+#include "utils.h"
 
-DES::DES(uint64 key)
-{
+using namespace std;
+
+DES::DES(string key) {
     keygen(key);
 }
 
-uint64 DES::encrypt(uint64 block)
-{
+string DES::encrypt(string block) {
     return des(block, false);
 }
 
-uint64 DES::decrypt(uint64 block)
-{
+string DES::decrypt(string block) {
     return des(block, true);
 }
 
-uint64 DES::encrypt(uint64 block, uint64 key)
-{
-    DES des(key);
-    return des.des(block, false);
-}
-
-uint64 DES::decrypt(uint64 block, uint64 key)
-{
-    DES des(key);
-    return des.des(block, true);
-}
-
-void DES::keygen(uint64 key)
-{
-    uint64 permuted_choice_1 = 0;
-    for (uint8 i = 0; i < 56; i++)
-    {
-        permuted_choice_1 <<= 1;
-        permuted_choice_1 |= (key >> (64-PC1[i])) & LB64_MASK;
-    }
-
-    // 28 bits
-    uint32 C = (uint32) ((permuted_choice_1 >> 28) & 0x000000000fffffff);
-    uint32 D = (uint32)  (permuted_choice_1 & 0x000000000fffffff);
-
-    // Calculation of the 16 keys
-    for (uint8 i = 0; i < 16; i++)
-    {
-        // key schedule, shifting Ci and Di
-        for (uint8 j = 0; j < ITERATION_SHIFT[i]; j++)
-        {
-            C = (0x0fffffff & (C << 1)) | (0x00000001 & (C >> 27));
-            D = (0x0fffffff & (D << 1)) | (0x00000001 & (D >> 27));
-        }
-
-        uint64 permuted_choice_2 = (((uint64) C) << 28) | (uint64) D;
-
-        sub_key[i] = 0; // 48 bits (2*24)
-        for (uint8 j = 0; j < 48; j++)
-        {
-            sub_key[i] <<= 1;
-            sub_key[i] |= (permuted_choice_2 >> (56-PC2[j])) & LB64_MASK;
+string DES::process_string(string substring, int p) {
+    string row, col;
+    for (int i = 0; i < 6; i++) {
+        if (i == 0 || i == 5)row = row + substring[i];
+        else {
+            col = col + substring[i];
         }
     }
+    int r = bin_to_dec(row);
+    int c = bin_to_dec(col);
+    int s_box_pos = sbox[p][r][c];
+    string fbit_bin_str = "0000";
+    int len = dec_to_bin(s_box_pos).length();
+    string bin = dec_to_bin(s_box_pos);
+
+    for (int i = 0; i < len; i++) {
+        fbit_bin_str[i + (4 - len)] = bin[i];
+    }
+    return fbit_bin_str;
 }
 
-uint64 DES::des(uint64 block, bool mode)
-{
-    block = ip(block);
-
-    uint32 L = (uint32) (block >> 32) & L64_MASK;
-    uint32 R = (uint32) (block & L64_MASK);
-
-    for (uint8 i = 0; i < 16; i++)
-    {
-        uint32 F = mode ? f(R, sub_key[15 - i]) : f(R, sub_key[i]);
-        feistel(L, R, F);
+string DES::expanded_msg(string R) {
+    int ep_msg_index = 0, R_index = 0, i, j;
+    string ep_msg;
+    for (i = 0; i < 48; i++)ep_msg = ep_msg + '0';
+    for (i = 0; i < 8; i++) {
+        for (j = 0; j < 6; j++) {
+            R_index = ep[i][j] - 1;
+            ep_msg[ep_msg_index] = R[R_index];
+            ep_msg_index++;
+        }
     }
-
-    block = (((uint64) R) << 32) | (uint64) L;
-    return fp(block);
+    return ep_msg;
 }
 
-uint64 DES::ip(uint64 block)
-{
-    uint64 result = 0;
-    for (uint8 i = 0; i < 64; i++)
-    {
-        result <<= 1;
-        result |= (block >> (64-IP[i])) & LB64_MASK;
+string DES::xored_msg(string ep_msg, string fe_key) {
+    int xor_val, i, len = ep_msg.length();
+    char holder[len];
+    string xored_msg;
+
+    for (i = 0; i < len; i++) {
+        xor_val = ((fe_key[i] - '0') ^ (ep_msg[i] - '0'));
+        itoa(xor_val, holder, 10);
+        xored_msg = xored_msg + holder;
     }
-    return result;
+    return xored_msg;
 }
 
-uint64 DES::fp(uint64 block)
-{
-    uint64 result = 0;
-    for (uint8 i = 0; i < 64; i++)
-    {
-        result <<= 1;
-        result |= (block >> (64-FP[i])) & LB64_MASK;
+string DES::substitution_function(string xored_message) {
+    string thirty_two_bit_msg;
+    int index = 0, len = 6;
+    for (int i = 0; i < 48; i += 6) {
+        thirty_two_bit_msg = thirty_two_bit_msg + process_string(xored_message.substr(i, len), index);
+        index++;
     }
-    return result;
+    return thirty_two_bit_msg;
 }
 
-void DES::feistel(uint32 &L, uint32 &R, uint32 F)
-{
-    uint32 temp = R;
-    R = L ^ F;
-    L = temp;
+string permuted_message(string thirty_two_bit_msg) {
+    int index = 0, thirty_two_bit_msg_index = 0, i, j;
+    string permuted_msg;
+    for (i = 0; i < thirty_two_bit_msg.length(); i++)permuted_msg = permuted_msg + '0';
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 8; j++) {
+            thirty_two_bit_msg_index = pf[i][j] - 1;
+            permuted_msg[index] = thirty_two_bit_msg[thirty_two_bit_msg_index];
+            index++;
+        }
+    }
+    return permuted_msg;
 }
 
-uint32 DES::f(uint32 R, uint64 k) // f(R,k) function
-{
-    uint64 s_input = 0;
-    for (uint8 i = 0; i < 48; i++)
-    {
-        s_input <<= 1;
-        s_input |= (uint64) ((R >> (32 - EXPANSION[i])) & LB32_MASK);
+string DES::getKeys48(string C, string D) {
+    int fe_bin_key_index = 0, concat_key_index = 0, i, j, k;
+    string fe_bin_key, concat_keys = C + D;
+    for (i = 0; i < 48; i++)fe_bin_key = fe_bin_key + '0';
+    for (i = 0; i < 6; i++) {
+        for (j = 0; j < 8; j++) {
+            concat_key_index = pc2[i][j] - 1;
+            fe_bin_key[fe_bin_key_index] = concat_keys[concat_key_index];
+            fe_bin_key_index++;
+        }
+    }
+    return fe_bin_key;
+}
+
+string DES::rol_keys(string key, int i) {
+    int count = rotating_schedule[i], l, j, k;
+    string rol_key;
+    for (k = 0; k < 28; k++)rol_key = rol_key + '0';
+    while (count > 0) {
+        for (l = 0; l < 28; l++) {
+            if (l == 0)j = 27;
+            else {
+                j = l - 1;
+            }
+            rol_key[j] = key[l];
+        }
+        key = rol_key;
+        count--;
+    }
+    return rol_key;
+}
+
+void DES::keygen(string key) {
+    string fs_key = getKey56(key);
+    cout << "Fifty Six Bit Key:\n" << fs_key << endl;
+
+    string Co = fs_key.substr(0, 28);
+    string Do = fs_key.substr(28, 56);
+
+    string fe_key;
+    for (int i = 0; i < 16; i++) {
+        int iteration = i;
+        string C1 = rol_keys(Co, iteration % 16);
+        string D1 = rol_keys(Do, iteration % 16);
+
+        fe_key = getKeys48(C1, D1);
+        sub_key[i] = fe_key;
+
+        Co = C1;
+        Do = D1;
+    }
+}
+
+
+string DES::getKey56(string key) {
+    int i, j, k, bin_key_index = 0, index = 0;
+    string fs_bin_key;
+
+    for (k = 0; k < 56; k++)fs_bin_key = fs_bin_key + '0';
+    for (i = 0; i < 8; i++) {
+        for (j = 0; j < 7; j++) {
+            index = pc1[i][j] - 1;
+            fs_bin_key[bin_key_index] = key[index];
+            bin_key_index++;
+        }
+    }
+    return fs_bin_key;
+}
+
+
+string DES::des(string message, bool encrypt) {
+    string input;
+    input = std::move(message);
+
+    string ip_msg = ip(input);
+    cout << "IP message:\n" << ip_msg << endl;
+
+    string Lo = ip_msg.substr(0, 32);
+    cout << "\nL[" << 0 << "]:" << Lo << endl;
+
+    string Ro = ip_msg.substr(32, 64);
+    cout << "R[" << 0 << "]:" << Ro << endl;
+
+    string fe_key;
+
+    for (int r = 0; r < 16; r++) {
+        cout << "\nRound:" << r + 1;
+        string ep_msg = expanded_msg(Ro);
+
+        if (!encrypt) {
+            fe_key = "";
+            for (int j = 0; j < 48; j++)fe_key = fe_key + sub_key[16 - r - 1][j];
+            cout << "\nkey[" << 16-r << "]:\n" << fe_key << endl;
+        } else {
+            fe_key = "";
+            for (int j = 0; j < 48; j++)fe_key = fe_key + sub_key[r][j];
+            cout << "\nkey[" << r + 1 << "]:\n" << fe_key << endl;
+        }
+
+        string xored_message = xored_msg(ep_msg, fe_key);
+        string substituted_msg = substitution_function(xored_message);
+        cout << "Substituted Message(S-Box outputs):\n" << substituted_msg << endl <<
+             endl;
+
+        string permuted_msg = permuted_message(substituted_msg);
+        cout << "Permuted message(f(R[" << r << "],K[" << r + 1 << "])):\n" << permuted_msg << endl <<
+             endl;
+
+        string L1 = Ro;
+        string R1 = xored_msg(Lo, permuted_msg);
+        Lo = L1;
+        Ro = R1;
     }
 
-    s_input = s_input ^ k;
 
-    uint32 s_output = 0;
-    for (uint8 i = 0; i < 8; i++)
-    {
-        char row = (char) ((s_input & (0x0000840000000000 >> 6*i)) >> (42-6*i));
-        row = (row >> 4) | (row & 0x01);
+    string reversed_msg = Ro + Lo;
+    cout << "\nR+L:\n" << reversed_msg << endl;
 
-        char column = (char) ((s_input & (0x0000780000000000 >> 6*i)) >> (43-6*i));
+    string des_encrypted_msg = fp(reversed_msg);
+    cout << "DES Encrypted/Decrypted Binary Message:\n" << des_encrypted_msg << endl;
 
-        s_output <<= 4;
-        s_output |= (uint32) (SBOX[i][16 * row + column] & 0x0f);
+    return des_encrypted_msg;
+
+}
+
+string DES::ip(string msg) {
+    int ip_msg_index = 0, msg_index = 0, i, j;
+    string ip_msg;
+    for (i = 0; i < 64; i++)ip_msg = ip_msg + '0';
+    for (i = 0; i < 8; i++) {
+        for (j = 0; j < 8; j++) {
+            msg_index = IP[i][j] - 1;
+            ip_msg[ip_msg_index] = msg[msg_index];
+            ip_msg_index++;
+        }
     }
+    return ip_msg;
+}
 
-    uint32 f_result = 0;
-    for (uint8 i = 0; i < 32; i++)
-    {
-        f_result <<= 1;
-        f_result |= (s_output >> (32 - PBOX[i])) & LB32_MASK;
+string DES::fp(string reversed_msg) {
+    int inv_msg_index = 0, index = 0, i, j;
+    string inv_msg = "";
+    for (i = 0; i < 64; i++)inv_msg = inv_msg + '0';
+    for (i = 0; i < 8; i++) {
+        for (j = 0; j < 8; j++) {
+            index = FP[i][j] - 1;
+            inv_msg[inv_msg_index] = reversed_msg[index];
+            inv_msg_index++;
+        }
     }
-
-    return f_result;
+    return inv_msg;
 }
