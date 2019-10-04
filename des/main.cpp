@@ -2,6 +2,8 @@
 #include <string>
 #include <cmath>
 #include <vector>
+#include <fstream>
+#include <sstream>
 #include "utils.h"
 #include "DES.h"
 
@@ -10,8 +12,17 @@ using namespace std;
 
 int main() {
     string plainText, key;
-    cout << "Enter plain text" << endl;
-    cin >> plainText;
+    //by hand
+    //cout << "Enter plain text" << endl;
+    //cin >> plainText;
+
+    ifstream inFile;
+    inFile.open("/home/whyko/CLionProjects/ipm/des/input.txt");
+
+    stringstream strStream;
+    strStream << inFile.rdbuf(); //read the file
+    plainText = strStream.str();
+
     string binaryString = TextToBinaryString(plainText);
 
     uint missingBitsCount = (64 - binaryString.length() % 64);
@@ -44,49 +55,42 @@ int main() {
 
     cout << "Plain text:" << endl;
     cout << plainText << endl;
+    vector<DES> deses;
+    vector<string> poprikoly;
+    string encryptedText;
+    for (vector<string>::const_iterator i = encodeBlocks.begin(); i != encodeBlocks.end(); ++i) {
+        cout << *i << endl;
+        string desString = *i;
 
-    string binaryEncodedText;
+        string binKey = TextToBinaryString(key);
+        string binString = desString;
 
-    string binKey = TextToBinaryString(key);
-    DES des(binKey);
-    string binString = TextToBinaryString(plainText);
-    string encT = des.encrypt(binaryString);
-    cout << encT << endl;
-    cout << BinaryToString(encT) << endl;
+        DES des(binKey);
 
-    cout << BinaryToString(des.decrypt(encT));
+        string binaryEncryptedBlock = des.encrypt(binString);
+        deses.push_back(des);
+        poprikoly.push_back(BinaryToString(binaryEncryptedBlock));
+        encryptedText += binaryEncryptedBlock;
+    }
+    cout << BinaryToString(encryptedText) << endl;
 
-//    for (vector<string>::const_iterator i = encodeBlocks.begin(); i != encodeBlocks.end(); ++i) {
-//        cout << *i << endl;
-//        string desString = *i;
-//
-//        string binString = TextToBinaryString(desString);
-//        string binKey = TextToBinaryString(key);
-//        string enc_msg = des_process(binString, binKey, true);
-//        cout << "DES Encrypted Message:" << BinaryToString(enc_msg) << endl;
-//        binaryEncodedText += enc_msg;
-//    }
-//
-//    cout << "Encrypted text:" << endl;
-//    string encodedText;
-//    encodedText = BinaryToString(binaryEncodedText);
-//    cout << encodedText << endl;
-//
-//    vector<string> decodeBlocks;
-//    decodeBlocks = getBlocks(binaryEncodedText);
-//    string decodedText;
-//    for (vector<string>::const_iterator i = decodeBlocks.begin(); i != decodeBlocks.end(); ++i) {
-//        string desString = *i;
-//        string binString = TextToBinaryString(desString);
-//        string binKey = TextToBinaryString(key);
-//
-//        string de_msg = des_process(desString, binKey, false);
-//
-//        cout << "DES Decrypted Message:" << BinaryToString(de_msg) << endl;
-//        decodedText += de_msg;
-//    }
-//    cout << "Decrypted text:" << endl;
-//    cout << decodedText;
+    vector<string> decodeBlocks = getBlocks(encryptedText);
+    string decryptedText;
+    int count = 0;
+    for (vector<string>::const_iterator i = decodeBlocks.begin(); i != decodeBlocks.end(); ++i) {
+        cout << *i << endl;
+        string desString = *i;
+
+        DES des = deses[count];
+        string binKey = TextToBinaryString(key);
+        string encString = desString;
+        string binaryEncryptedBlock = des.decrypt(desString);
+        decryptedText += binaryEncryptedBlock;
+        count++;
+    }
+
+    cout << BinaryToString(decryptedText) << endl;
+
     return 0;
 }
 
