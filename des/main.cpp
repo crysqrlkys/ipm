@@ -6,6 +6,8 @@
 #include <sstream>
 #include "utils.h"
 #include "DES.h"
+#include "DES2.h"
+#include "DES3.h"
 
 using namespace std;
 
@@ -33,14 +35,6 @@ int main() {
     vector<string> encodeBlocks;
     encodeBlocks = getBlocks(correctBinaryString);
 
-    int desChoice;
-    cout << "Which DES? [1/2/3]" << endl;
-    cin >> desChoice;
-    if (desChoice<1 || desChoice>3){
-        cout << "Wrong des algorithm" << endl;
-        return -1;
-    }
-
     char question;
     cout << "Input key by hand? y/n - ";
     cin >> question;
@@ -48,61 +42,109 @@ int main() {
         while (true) {
             cout << "Enter the key " << endl;
             cin >> key;
-            bool check = inputVerifier(key, desChoice);
+            bool check = inputVerifier(key, 3);
             if (check) break;
             else {
                 cout << "Wrong Input" << endl;
             }
         }
     } else {
-        switch (desChoice) {
-            case 1:
-                key = "12345678";
-                break;
-            case 2:
-                key = "1234567812345678";
-                break;
-            case 3:
-                key = "123456781234567812345678";
-                break;
-        }
+        key = "194726529875472846827124";
     }
 
     cout << "Plain text:" << endl;
-    cout << plainText << endl;
-    vector<DES> deses;
-    string encryptedText;
+    cout << plainText << endl << endl;
+
+    string desEncryptedText;
+    string doubleDesEncryptedText;
+    string tripleDesEncryptedText;
+
     for (vector<string>::const_iterator i = encodeBlocks.begin(); i != encodeBlocks.end(); ++i) {
         //cout << *i << endl;
         string desString = *i;
 
         string binKey = textToBinaryString(key);
 
-        DES des(binKey);
+        string key1 = binKey.substr(0, 64);
+        string key2 = binKey.substr(64, 64);
+        string key3 = binKey.substr(128, 64);
 
-        string binaryEncryptedBlock = des.encrypt(desString);
-        deses.push_back(des);
-        encryptedText += binaryEncryptedBlock;
+        DES des(key1);
+        DES2 des2(key1, key2);
+        DES3 des3(key1, key2, key3);
+
+        string desBinaryEncryptedBlock = des.encrypt(desString);
+        string doubleDesBinaryEncryptedBlock = des2.encrypt(desString);
+        string tripleDesBinaryEncryptedBlock = des3.encrypt(desString);
+
+        desEncryptedText += desBinaryEncryptedBlock;
+        doubleDesEncryptedText += doubleDesBinaryEncryptedBlock;
+        tripleDesEncryptedText += tripleDesBinaryEncryptedBlock;
     }
-    cout << "Encrypted Text: " << endl;
-    cout << binaryToString(encryptedText) << endl;
 
-    vector<string> decodeBlocks = getBlocks(encryptedText);
-    string decryptedText;
-    int count = 0;
-    for (vector<string>::const_iterator i = decodeBlocks.begin(); i != decodeBlocks.end(); ++i) {
-        //cout << *i << endl;
+    cout << "des: Encrypted Text: " << endl;
+    cout << binaryToString(desEncryptedText) << endl << endl;
+
+    cout << "2des: Encrypted Text: " << endl;
+    cout << binaryToString(doubleDesEncryptedText) << endl << endl;
+
+    cout << "3des: Encrypted Text: " << endl;
+    cout << binaryToString(tripleDesEncryptedText) << endl << endl;
+
+    vector<string> desDecodeBlocks = getBlocks(desEncryptedText);
+    vector<string> doubleDesDecodeBlocks = getBlocks(doubleDesEncryptedText);
+    vector<string> tripleDesDecodeBlocks = getBlocks(tripleDesEncryptedText);
+
+    string desDecryptedText;
+
+    for (vector<string>::const_iterator i = desDecodeBlocks.begin(); i != desDecodeBlocks.end(); ++i) {
         string desString = *i;
-
-        DES des = deses[count];
         string binKey = textToBinaryString(key);
-        string binaryEncryptedBlock = des.decrypt(desString);
-        decryptedText += binaryEncryptedBlock;
-        count++;
+
+        string key1 = binKey.substr(0, 64);
+        DES des(key1);
+
+        string desBinaryDecryptedBlock = des.decrypt(desString);
+        desDecryptedText += desBinaryDecryptedBlock;
     }
 
-    cout << "Decrypted text: " << endl;
-    cout << binaryToString(decryptedText) << endl;
+    cout << "des: Decrypted text: " << endl;
+    cout << binaryToString(desDecryptedText) << endl << endl;
+
+    string doubleDesDecryptedText;
+
+    for (vector<string>::const_iterator i = doubleDesDecodeBlocks.begin(); i != doubleDesDecodeBlocks.end(); ++i) {
+        string desString = *i;
+        string binKey = textToBinaryString(key);
+
+        string key1 = binKey.substr(0, 64);
+        string key2 = binKey.substr(64, 64);
+        DES2 des2(key1, key2);
+
+        string doubleDesBinaryDecryptedBlock = des2.decrypt(desString);
+        doubleDesDecryptedText += doubleDesBinaryDecryptedBlock;
+    }
+
+    cout << "2des: Decrypted text: " << endl;
+    cout << binaryToString(doubleDesDecryptedText) << endl << endl;
+
+    string tripleDesDecryptedText;
+
+    for (vector<string>::const_iterator i = tripleDesDecodeBlocks.begin(); i != tripleDesDecodeBlocks.end(); ++i) {
+        string desString = *i;
+        string binKey = textToBinaryString(key);
+
+        string key1 = binKey.substr(0, 64);
+        string key2 = binKey.substr(64, 64);
+        string key3 = binKey.substr(128, 64);
+        DES3 des3(key1, key2, key3);
+
+        string tripleDesBinaryDecryptedBlock = des3.decrypt(desString);
+        tripleDesDecryptedText += tripleDesBinaryDecryptedBlock;
+    }
+
+    cout << "3des: Decrypted text: " << endl;
+    cout << binaryToString(tripleDesDecryptedText) << endl << endl;
 
     return 0;
 }

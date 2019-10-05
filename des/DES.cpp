@@ -222,7 +222,7 @@ string DES::des(string message, bool encrypt) {
 string DES::ip(string msg) {
     int ipMsgIndex = 0, msgIndex = 0, i, j;
     string ipMsg;
-    for (i = 0; i < 64; i++)ipMsg = ipMsg + '0';
+    for (i = 0; i < 64; i++) ipMsg = ipMsg + '0';
     for (i = 0; i < 8; i++) {
         for (j = 0; j < 8; j++) {
             msgIndex = IP[i][j] - 1;
@@ -236,7 +236,7 @@ string DES::ip(string msg) {
 string DES::fp(string reversedMsg) {
     int invMsgIndex = 0, index = 0, i, j;
     string invMsg = "";
-    for (i = 0; i < 64; i++)invMsg = invMsg + '0';
+    for (i = 0; i < 64; i++) invMsg = invMsg + '0';
     for (i = 0; i < 8; i++) {
         for (j = 0; j < 8; j++) {
             index = FP[i][j] - 1;

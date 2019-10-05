@@ -14,5 +14,5 @@ string DES2::encrypt(string block) {
 }
 
 string DES2::decrypt(string block) {
-    return des1.decrypt(des2.encrypt(block));
+    return des1.decrypt(des2.decrypt(block));
 }
