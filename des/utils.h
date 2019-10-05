@@ -12,10 +12,11 @@
 using namespace std;
 
 char *itoa(int value, char *result, int base);
-string BinaryToString(const string &binaryString);
-string TextToBinaryString(const string &text);
-int bin_to_dec(string bin);
-string dec_to_bin(int dec);
-bool input_verifier(const string &message);
+string binaryToString(const string &binaryString);
+string textToBinaryString(const string &text);
+int binaryToDecimal(string bin);
+string decimalToBinary(int dec);
+bool inputVerifier(const string &message, int count);
 vector <string> getBlocks(string &binaryString);
+void logToConsole(bool isEnabled, const string& message, const string& value);
 #endif //DES_UTILS_H

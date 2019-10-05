@@ -117,5 +117,5 @@ int pc2[6][8] = {
         34, 53, 46, 42, 50, 36, 29, 32
 };
 
-int rotating_schedule[16] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
+int rotatingSchedule[16] = {1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1};
 #endif //DES_CONSTANTS_H

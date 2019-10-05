@@ -40,7 +40,7 @@ char *itoa(int value, char *result, int base) {
     return result;
 }
 
-string BinaryToString(const string &binaryString) {
+string binaryToString(const string &binaryString) {
     stringstream sstream(binaryString);
     string text;
     while (sstream.good()) {
@@ -54,7 +54,7 @@ string BinaryToString(const string &binaryString) {
     return text;
 }
 
-string TextToBinaryString(const string &text) {
+string textToBinaryString(const string &text) {
     string binaryString;
     for (size_t i = 0; i < text.size(); i++) {
         binaryString += bitset<8>(text.c_str()[i]).to_string();
@@ -62,7 +62,7 @@ string TextToBinaryString(const string &text) {
     return binaryString;
 }
 
-int bin_to_dec(string bin) {
+int binaryToDecimal(string bin) {
     int dec = 0, incr = 0, sum = 0;
     for (int i = (bin.length() - 1); i >= 0; i--) {
         dec = bin[i] - '0';
@@ -72,7 +72,7 @@ int bin_to_dec(string bin) {
     return sum;
 }
 
-string dec_to_bin(int dec) {
+string decimalToBinary(int dec) {
     int i = dec;
     string str = "";
     char binary[4];
@@ -91,8 +91,8 @@ string dec_to_bin(int dec) {
     return fin_str;
 }
 
-bool input_verifier(const string &message) {
-    return message.length() == 8;
+bool inputVerifier(const string &message, int count) {
+    return message.length() == 8 * count;
 }
 
 vector <string> getBlocks(string &binaryString) {
@@ -106,5 +106,11 @@ vector <string> getBlocks(string &binaryString) {
         }
     }
     return blocks;
+}
+
+void logToConsole(bool isEnabled, const string& message, const string& value){
+    if (isEnabled){
+        cout << message << value << endl;
+    }
 }
 

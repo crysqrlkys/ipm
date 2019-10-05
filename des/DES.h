@@ -5,31 +5,28 @@
 #ifndef DES_DES_H
 #define DES_DES_H
 
-
+#include <string>
 using namespace std;
 
 class DES {
 public:
     DES(string key);
-
     string des(string message, bool encrypt);
-
     string encrypt(string block);
-
     string decrypt(string block);
 
 protected:
-    static string rol_keys(string key, int i);
+    static string rolKeys(string key, int i);
     static string getKey56(string key);
     static string getKeys48(string C, string D);
-    string process_string(string substring, int p);
-    string expanded_msg(string R);
-    string xored_msg(string ep_msg, string fe_key);
-    string substitution_function(string xored_message);
-
+    string processString(string substring, int p);
+    string expandedMessage(string R);
+    string xoredMessage(string epMsg, string feKey);
+    string substitutionFunction(string xoredMessage);
     void keygen(string fs_key);
     static string ip(string block);
-    static string fp(string block);
+    static string fp(string reversedMsg);
+
 private:
     string sub_key[16];
 };
