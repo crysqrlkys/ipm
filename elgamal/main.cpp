@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <sstream>
 #include <codecvt>
+#include <fstream>
 
 
 using namespace std;
@@ -26,10 +27,11 @@ public:
 
 class PrivateKey {
 public:
-    PrivateKey(long long _x) {
+    PrivateKey(long long _x, long long _p) {
         x = _x;
+        p = _p;
     }
-
+    long long p;
     long long x;
 };
 
@@ -178,7 +180,7 @@ tuple<PublicKey, PrivateKey> generateKeys() {
     long long y = modulo(g, x, p);
 
     PublicKey publicKey(p, g, y, iNumBits);
-    PrivateKey privateKey(x);
+    PrivateKey privateKey(x, p);
     return make_tuple(publicKey, privateKey);
 }
 
@@ -199,18 +201,59 @@ string crypt(PublicKey pk, vector<char> text) {
     return encText;
 }
 
+string decrypt(PrivateKey pk, vector<vector<long long>> pairs) {
+    long long p = pk.p;
+    long long x = pk.x;
+
+    string decryptedText;
+    for (auto const& pair : pairs) {
+        long long a = pair[0];
+        long long b = pair[1];
+        if (a != 0 && b != 0) {
+            int deM = mul(b, modulo(a, p - 1 - x, p), p);// m=b*(a^x)^(-1)mod p =b*a^(p-1-x)mod p
+            char m = static_cast<char>(deM);
+            decryptedText+=m;
+        }
+    }
+    return decryptedText;
+}
 
 int main() {
     tuple<PublicKey, PrivateKey> a = generateKeys();
-    string t = "My name is Jeff and Jeff";
-    vector<char> bytes(t.begin(), t.end());
+
+    string plainText;
+
+    ifstream inFile;
+    inFile.open("/home/whyko/CLionProjects/ipm/elgamal/input.txt");
+    stringstream strStream;
+    strStream << inFile.rdbuf();
+    plainText = strStream.str();
+
+    vector<char> bytes(plainText.begin(), plainText.end());
     string cipher = crypt(get<0>(a), bytes);
-    cout<< "Encoded text: " << endl;
-    cout << cipher;
+    cout << "Encoded text: " << endl;
+    cout << cipher << endl;
 
+    vector<vector<long long>> pairs;
+    vector<long long> values;
 
+    stringstream stream(cipher);
+    long long n;
+    while(stream >> n){
+        values.push_back(n);
+    }
 
-//    string plain_t = decrypt(get<1>(a), cipher);
-//    cout << plain_t;
+    for(vector<int>::size_type i = 0; i != values.size(); i = i + 2) {
+        long long a = values[i];
+        long long b = values[i+1];
+        vector<long long> pair;
+        pair.push_back(a);
+        pair.push_back(b);
+        pairs.push_back(pair);
+    }
+
+    string decryptedText = decrypt(get<1>(a), pairs);
+    cout << "Decrypted Text" << endl;
+    cout << decryptedText << endl;
     return 0;
 }
