@@ -16,7 +16,7 @@ int main() {
     string plainText, key;
 
     ifstream inFile;
-    inFile.open("/home/whyko/CLionProjects/ipm/des/input.txt");
+    inFile.open("../input.txt");
     stringstream strStream;
     strStream << inFile.rdbuf();
     plainText = strStream.str();
