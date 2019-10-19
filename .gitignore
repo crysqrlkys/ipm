@@ -1,3 +1,8 @@
 cmake-build-debug
 des/.idea/
 elgamal/.idea/
+rsa/.idea/
+stb/.idea/
+.idea/
+stb/venv/
+stb/__pycache__/
