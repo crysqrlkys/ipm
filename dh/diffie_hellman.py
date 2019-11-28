@@ -4,16 +4,23 @@ _hexdecoder = getdecoder("hex")
 _hexencoder = getencoder("hex")
 
 
-def str_xor(a, b):
-    return bytes(a_i ^ b_i for a_i, b_i in zip(bytearray(a), bytearray(b)))
-
-
 def hex_decode(data):
     return _hexdecoder(data)[0]
 
 
 def hex_encode(data):
     return _hexencoder(data)[0].decode("utf-8")
+
+
+CURVE_PARAMS = (
+    hex_decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD97"),
+    hex_decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD94"),
+    hex_decode("00000000000000000000000000000000000000000000000000000000000000a6"),
+)
+
+
+def str_xor(a, b):
+    return bytes(a_i ^ b_i for a_i, b_i in zip(bytearray(a), bytearray(b)))
 
 
 def bytes_to_long(raw):
@@ -86,13 +93,27 @@ class Curve:
 
 
 class DiffieHellman:
-    def __init__(self):
-        pass
+    def __init__(self, d_a, d_b, G):
+        self.d_a = d_a
+        self.d_b = d_b
+        self.G = G
 
     def run(self):
-        return True
+        curve = Curve(*CURVE_PARAMS)
+
+        q_a = curve.scalar_multiply(self.d_a, self.G)
+        q_b = curve.scalar_multiply(self.d_b, self.G)
+
+        x_k_a, _ = curve.scalar_multiply(self.d_a, q_b)
+        x_k_b, _ = curve.scalar_multiply(self.d_b, q_a)
+        return x_k_a
 
 
 if __name__ == '__main__':
-    dh = DiffieHellman()
-    s = dh.run()
+    d_a = 192841
+    d_b = 742728
+    G = (132864, 81275427)
+
+    dh = DiffieHellman(d_a, d_b, G)
+    shared_key = dh.run()
+    print(f"Shared private key:", shared_key)
